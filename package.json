@@ -1,0 +1,30 @@
+{
+  "name": "solana-pay-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chat with an AI agent that checks balances, saves contacts, and sends SOL on Solana devnet — nothing is signed until you approve.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test": "vitest run",
+    "smoke:llm": "tsx scripts/smoke-llm.ts",
+    "integration:devnet": "tsx scripts/devnet-flow.ts"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.98.4",
+    "next": "^15.5.4",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.16",
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "tailwindcss": "^4.1.16",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
