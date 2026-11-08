@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, Outfit } from "next/font/google";
+import { IBM_Plex_Mono, Inter } from "next/font/google";
 import "./globals.css";
 
-const outfit = Outfit({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-outfit",
+  variable: "--font-sans",
 });
 
 const plex = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["400", "500"],
-  variable: "--font-plex",
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${outfit.variable} ${plex.variable}`}>{children}</body>
+      <body className={`${inter.variable} ${plex.variable}`}>{children}</body>
     </html>
   );
 }

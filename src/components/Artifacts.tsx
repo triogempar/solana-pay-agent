@@ -1,88 +1,79 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { formatTime, shortAddress } from "@/lib/format";
 import type { Artifact, Locale, TransferView } from "@/lib/types";
 
 const copy = {
   en: {
-    approve: "Approve & send",
+    approve: "Approve",
     cancel: "Cancel",
-    recipient: "Recipient",
-    amount: "Amount",
+    recipient: "To",
     network: "Network",
-    fee: "Estimated fee",
-    pendingTitle: "Confirm transfer",
+    fee: "Fee",
+    pendingTitle: "Review transfer",
     pendingNote: "Nothing is signed until you approve.",
-    confirmed: "Sent on devnet",
+    confirmed: "Sent",
     cancelled: "Cancelled",
     cancelledNote: "Nothing was sent.",
     failed: "Not sent",
     explorer: "View on Explorer",
     sending: "Sending…",
-    balance: "Devnet balance",
-    txs: "Recent transactions",
+    balance: "Balance",
+    txs: "Recent",
     emptyTx: "No transactions yet.",
     success: "Success",
     txFailed: "Failed",
-    saved: "Contact saved",
+    saved: "Saved",
     explained: "Transaction",
     from: "From",
-    to: "To",
     feeShort: "Fee",
     copied: "Copied",
     copy: "Copy",
+    signature: "Signature",
   },
   id: {
-    approve: "Setujui & kirim",
+    approve: "Setujui",
     cancel: "Batal",
-    recipient: "Penerima",
-    amount: "Jumlah",
+    recipient: "Ke",
     network: "Jaringan",
-    fee: "Perkiraan biaya",
-    pendingTitle: "Konfirmasi transfer",
+    fee: "Biaya",
+    pendingTitle: "Tinjau transfer",
     pendingNote: "Belum ditandatangani sebelum Anda menyetujui.",
-    confirmed: "Terkirim di devnet",
+    confirmed: "Terkirim",
     cancelled: "Dibatalkan",
     cancelledNote: "Tidak ada yang terkirim.",
     failed: "Tidak terkirim",
     explorer: "Lihat di Explorer",
     sending: "Mengirim…",
-    balance: "Saldo devnet",
-    txs: "Transaksi terbaru",
+    balance: "Saldo",
+    txs: "Terbaru",
     emptyTx: "Belum ada transaksi.",
     success: "Berhasil",
     txFailed: "Gagal",
-    saved: "Kontak tersimpan",
+    saved: "Tersimpan",
     explained: "Transaksi",
     from: "Dari",
-    to: "Ke",
     feeShort: "Biaya",
     copied: "Tersalin",
     copy: "Salin",
+    signature: "Tanda tangan",
   },
 } as const;
 
 const toolLabels: Record<string, { en: string; id: string }> = {
   get_balance: { en: "Checked balance", id: "Cek saldo" },
   send_sol: { en: "Prepared transfer", id: "Siapkan transfer" },
-  get_recent_transactions: { en: "Looked up history", id: "Riwayat" },
+  get_recent_transactions: { en: "Recent transactions", id: "Riwayat" },
   save_contact: { en: "Saved contact", id: "Simpan kontak" },
-  list_contacts: { en: "Listed contacts", id: "Daftar kontak" },
-  explain_transaction: { en: "Explained transaction", id: "Jelaskan transaksi" },
+  list_contacts: { en: "Contacts", id: "Kontak" },
+  explain_transaction: { en: "Transaction", id: "Transaksi" },
 };
 
 export function ToolPills({ tools, locale }: { tools: string[]; locale: Locale }) {
   if (!tools.length) return null;
-  return (
-    <div className="tools">
-      {tools.map((tool, index) => (
-        <span className="tool-pill" key={`${tool}-${index}`}>
-          {toolLabels[tool]?.[locale] ?? tool}
-        </span>
-      ))}
-    </div>
-  );
+  const labels = tools.map((tool) => toolLabels[tool]?.[locale] ?? tool);
+  return <p className="tool-line">{labels.join(" · ")}</p>;
 }
 
 export function ArtifactList({
@@ -99,8 +90,9 @@ export function ArtifactList({
   onCancel: (id: string) => void;
 }) {
   if (!artifacts.length) return null;
+  const text = copy[locale];
   return (
-    <div className="cards">
+    <>
       {artifacts.map((artifact, index) => {
         if (artifact.type === "transfer") {
           return (
@@ -116,71 +108,72 @@ export function ArtifactList({
         }
         if (artifact.type === "balance") {
           return (
-            <article className="fact-card" key={`bal-${index}`}>
-              <h3>{copy[locale].balance}</h3>
-              <p className="mono" style={{ fontSize: 22, margin: "8px 0 0", color: "var(--text)" }}>
-                {artifact.balanceSol} SOL
-              </p>
-              <p className="mono">{shortAddress(artifact.address, 6, 6)}</p>
-            </article>
+            <div className="result" key={`bal-${index}`}>
+              <div className="result-main">
+                <span className="result-label">{text.balance}</span>
+                <strong className="mono">
+                  {artifact.balanceSol} SOL
+                </strong>
+              </div>
+              <span className="mono result-sub">{shortAddress(artifact.address, 4, 4)}</span>
+            </div>
           );
         }
         if (artifact.type === "transactions") {
           return (
-            <article className="fact-card" key={`tx-${index}`}>
-              <h3>{copy[locale].txs}</h3>
-              {artifact.items.length === 0 ? <p>{copy[locale].emptyTx}</p> : null}
+            <div className="rows" key={`tx-${index}`}>
+              <h3>{text.txs}</h3>
+              {artifact.items.length === 0 ? <p className="quiet">{text.emptyTx}</p> : null}
               {artifact.items.map((item) => (
-                <div className="tx-row" key={item.signature}>
-                  <a className="explorer mono" href={item.explorerUrl} target="_blank" rel="noreferrer">
-                    {shortAddress(item.signature, 6, 6)}
+                <div className="tx" key={item.signature}>
+                  <a className="mono" href={item.explorerUrl} target="_blank" rel="noreferrer">
+                    {shortAddress(item.signature, 4, 4)}
                   </a>
-                  <span className="hint" style={{ margin: 0 }}>
-                    {formatTime(item.blockTime)}
-                  </span>
-                  <span>{item.err ? copy[locale].txFailed : copy[locale].success}</span>
+                  <span>{formatTime(item.blockTime)}</span>
+                  <span>{item.err ? text.txFailed : text.success}</span>
                 </div>
               ))}
-            </article>
+            </div>
           );
         }
         if (artifact.type === "explanation") {
           const item = artifact.explanation;
           return (
-            <article className="fact-card" key={item.signature}>
-              <h3>{copy[locale].explained}</h3>
-              <dl className="facts">
-                <dt>{copy[locale].network}</dt>
-                <dd>{item.status === "success" ? copy[locale].success : copy[locale].txFailed}</dd>
-                <dt>{copy[locale].feeShort}</dt>
-                <dd className="mono">{item.feeSol} SOL</dd>
-                {item.transfers.map((transfer, transferIndex) => (
-                  <Fragment key={`${transfer.from}-${transferIndex}`}>
-                    <dt>{copy[locale].amount}</dt>
-                    <dd className="mono">{transfer.sol} SOL</dd>
-                    <dt>{copy[locale].from}</dt>
-                    <dd className="mono">{shortAddress(transfer.from, 6, 6)}</dd>
-                    <dt>{copy[locale].to}</dt>
-                    <dd className="mono">{shortAddress(transfer.to, 6, 6)}</dd>
-                  </Fragment>
-                ))}
-              </dl>
+            <div className="rows" key={item.signature}>
+              <h3>{text.explained}</h3>
+              <div className="explain-row">
+                <span>{text.network}</span>
+                <span>{item.status === "success" ? text.success : text.txFailed}</span>
+              </div>
+              <div className="explain-row">
+                <span>{text.feeShort}</span>
+                <span className="mono">{item.feeSol} SOL</span>
+              </div>
+              {item.transfers.map((transfer, transferIndex) => (
+                <div className="explain-row" key={`${transfer.from}-${transferIndex}`}>
+                  <span>{text.from}</span>
+                  <span className="mono">
+                    {transfer.sol} SOL · {shortAddress(transfer.from, 4, 4)} → {shortAddress(transfer.to, 4, 4)}
+                  </span>
+                </div>
+              ))}
               <a className="explorer" href={item.explorerUrl} target="_blank" rel="noreferrer">
-                {copy[locale].explorer}
+                {text.explorer}
               </a>
-            </article>
+            </div>
           );
         }
         return (
-          <article className="fact-card" key={`${artifact.name}-${index}`}>
-            <h3>{copy[locale].saved}</h3>
-            <p>
-              {artifact.name} · <span className="mono">{shortAddress(artifact.address, 6, 6)}</span>
-            </p>
-          </article>
+          <div className="result" key={`${artifact.name}-${index}`}>
+            <div className="result-main">
+              <span className="result-label">{text.saved}</span>
+              <strong>{artifact.name}</strong>
+            </div>
+            <span className="mono result-sub">{shortAddress(artifact.address, 4, 4)}</span>
+          </div>
         );
       })}
-    </div>
+    </>
   );
 }
 
@@ -199,7 +192,7 @@ function TransferCard({
 }) {
   const text = copy[locale];
   const [copied, setCopied] = useState(false);
-  const title =
+  const kicker =
     transfer.status === "confirmed"
       ? text.confirmed
       : transfer.status === "cancelled"
@@ -216,39 +209,60 @@ function TransferCard({
   }
 
   return (
-    <article className={`pay-card ${transfer.status}`} data-testid="transfer-card">
-      <h3>{title}</h3>
-      {transfer.status === "pending" ? <p className="pay-note">{text.pendingNote}</p> : null}
-      {transfer.status === "cancelled" ? <p className="pay-note">{text.cancelledNote}</p> : null}
-      {transfer.error && transfer.status !== "confirmed" && transfer.status !== "cancelled" ? (
-        <p className="pay-note">{transfer.error}</p>
-      ) : null}
-      <dl className="facts">
-        <dt>{text.recipient}</dt>
-        <dd>
-          {transfer.recipientLabel ? <strong>{transfer.recipientLabel}</strong> : null}
-          <div className="mono">{transfer.recipient}</div>
-        </dd>
-        <dt>{text.amount}</dt>
-        <dd className="mono">{transfer.amountSol} SOL</dd>
-        <dt>{text.network}</dt>
-        <dd>devnet</dd>
-        <dt>{text.fee}</dt>
-        <dd className="mono">~{transfer.estimatedFeeSol} SOL</dd>
+    <article className={`sheet ${transfer.status}`} data-testid="transfer-card">
+      <p className="sheet-kicker">{kicker}</p>
+      <p className="amount mono">
+        {transfer.amountSol}
+        <span>SOL</span>
+      </p>
+      <dl className="sheet-rows">
+        <div>
+          <dt>{text.recipient}</dt>
+          <dd>
+            {transfer.recipientLabel ? <span className="who">{transfer.recipientLabel}</span> : null}
+            <span className="mono addr">{shortAddress(transfer.recipient, 6, 6)}</span>
+            <span className="sr-only">{transfer.recipient}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>{text.network}</dt>
+          <dd>Devnet</dd>
+        </div>
+        <div>
+          <dt>{text.fee}</dt>
+          <dd className="mono">{transfer.estimatedFeeSol} SOL</dd>
+        </div>
         {transfer.signature ? (
-          <>
-            <dt>Signature</dt>
-            <dd className="mono">{shortAddress(transfer.signature, 8, 8)}</dd>
-          </>
+          <div>
+            <dt>{text.signature}</dt>
+            <dd>
+              <span className="sig-line">
+                <span className="mono">{shortAddress(transfer.signature, 6, 6)}</span>
+                <button className="btn-quiet inline" type="button" onClick={() => void copySignature()}>
+                  {copied ? text.copied : text.copy}
+                </button>
+              </span>
+              {transfer.explorerUrl ? (
+                <a className="explorer" href={transfer.explorerUrl} target="_blank" rel="noreferrer">
+                  {text.explorer}
+                </a>
+              ) : null}
+            </dd>
+          </div>
         ) : null}
       </dl>
+      {transfer.status === "pending" ? <p className="sheet-note">{text.pendingNote}</p> : null}
+      {transfer.status === "cancelled" ? <p className="sheet-note">{text.cancelledNote}</p> : null}
+      {transfer.error && transfer.status !== "confirmed" && transfer.status !== "cancelled" ? (
+        <p className="sheet-note danger">{transfer.error}</p>
+      ) : null}
       {transfer.status === "pending" ? (
-        <div className="actions">
-          <button className="btn" type="button" disabled={busy} onClick={() => onCancel(transfer.id)}>
+        <div className="sheet-actions">
+          <button className="btn-quiet" type="button" disabled={busy} onClick={() => onCancel(transfer.id)}>
             {text.cancel}
           </button>
           <button
-            className="btn primary"
+            className="btn-primary"
             type="button"
             data-testid="approve"
             disabled={busy}
@@ -256,16 +270,6 @@ function TransferCard({
           >
             {busy ? text.sending : text.approve}
           </button>
-        </div>
-      ) : null}
-      {transfer.explorerUrl ? (
-        <div className="actions" style={{ justifyContent: "space-between" }}>
-          <button className="btn" type="button" onClick={copySignature}>
-            {copied ? text.copied : text.copy}
-          </button>
-          <a className="explorer" href={transfer.explorerUrl} target="_blank" rel="noreferrer">
-            {text.explorer}
-          </a>
         </div>
       ) : null}
     </article>

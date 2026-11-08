@@ -20,9 +20,9 @@ type ChatMessage = {
 const SUGGESTIONS = [
   { label: "What's my balance?", prompt: "What's my balance?" },
   { label: "Berapa saldo saya?", prompt: "Berapa saldo saya?" },
-  { label: "Last 5 transactions", prompt: "Show my last 5 transactions" },
+  { label: "Show my last 5 transactions", prompt: "Show my last 5 transactions" },
   {
-    label: "Save Budi",
+    label: "Save BQiS4h…VyHA as Budi",
     prompt: "Save BQiS4hUHAChFwMqecbWbqwmi5LCwsSG8JMgrq1PpVyHA as Budi",
   },
   { label: "Send 0.1 SOL to Budi", prompt: "Send 0.1 SOL to Budi" },
@@ -32,6 +32,7 @@ export function AppShell() {
   const [wallet, setWallet] = useState<WalletStatus | null>(null);
   const [walletError, setWalletError] = useState<string | null>(null);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [contactsOpen, setContactsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -39,6 +40,7 @@ export function AppShell() {
   const [copied, setCopied] = useState(false);
   const threadRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
+  const contactsRef = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -72,6 +74,22 @@ export function AppShell() {
     const node = threadRef.current;
     if (node) node.scrollTop = node.scrollHeight;
   }, [messages, sending]);
+
+  useEffect(() => {
+    if (!contactsOpen) return;
+    function onPointer(event: MouseEvent) {
+      if (!contactsRef.current?.contains(event.target as Node)) setContactsOpen(false);
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setContactsOpen(false);
+    }
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [contactsOpen]);
 
   async function send(text: string) {
     const content = text.trim();
@@ -177,195 +195,161 @@ export function AppShell() {
   const showFaucet = wallet?.balanceLamports === "0" && !wallet.balanceError;
 
   return (
-    <div className="shell">
-      <header className="topbar">
-        <div className="brand">
-          <div className="mark" aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-              <path d="M3 16c4.2-.6 6.2-7 14-9" stroke="#06281f" strokeWidth="1.8" strokeLinecap="round" />
-              <circle cx="16.5" cy="6.5" r="2" fill="#241447" />
-            </svg>
-          </div>
-          <div>
-            <h1>Solana Pay Agent</h1>
-            <p>English & Indonesian · you approve every send</p>
-          </div>
-        </div>
-        <div className="wallet-meta">
-          <span className={`pill ${wallet?.clusterOk ? "ok" : ""}`}>Devnet</span>
+    <div className="app">
+      <header className="bar">
+        <div className="bar-inner">
+        <h1 className="wordmark">Solana Pay</h1>
+        <div className="meta">
+          <span className={`badge ${wallet && !wallet.clusterOk ? "bad" : ""}`}>Devnet</span>
           {wallet ? (
-            <div className="address-chip">
-              <a className="mono" href={wallet.explorerUrl} target="_blank" rel="noreferrer" style={{ color: "inherit", textDecoration: "none", fontSize: 12 }}>
+            <div className="address">
+              <a className="mono" href={wallet.explorerUrl} target="_blank" rel="noreferrer">
                 {shortAddress(wallet.address, 4, 4)}
               </a>
-              <button type="button" onClick={() => void copyAddress()}>
+              <button className="text-btn" type="button" onClick={() => void copyAddress()}>
                 {copied ? "Copied" : "Copy"}
               </button>
             </div>
           ) : (
-            <div className="address-chip">
-              <span className="hint" style={{ margin: 0 }}>
-                {walletError ? "Wallet error" : "Loading wallet…"}
-              </span>
-            </div>
+            <span className="quiet">{walletError ? "Wallet unavailable" : "Loading"}</span>
           )}
-          <div className="balance-chip" data-testid="balance">
-            <strong>{wallet ? formatSolHeader(lamports) : "—"}</strong>
-            <span>SOL</span>
+          <div className="balance" data-testid="balance">
+            <span className="mono">{wallet ? formatSolHeader(lamports) : "—"}</span>
+            <span className="unit">SOL</span>
           </div>
+          <div className="contacts" ref={contactsRef}>
+            <button
+              className="text-btn"
+              type="button"
+              aria-expanded={contactsOpen}
+              onClick={() => setContactsOpen((open) => !open)}
+            >
+              Contacts
+            </button>
+            {contactsOpen ? (
+              <div className="popover" role="dialog" aria-label="Contacts">
+                <h2>Contacts</h2>
+                {contacts.length === 0 ? (
+                  <p className="quiet">None saved.</p>
+                ) : (
+                  <ul className="contact-list">
+                    {contacts.map((contact) => (
+                      <li key={contact.name}>
+                        <span>{contact.name}</span>
+                        <span className="mono">{shortAddress(contact.address, 4, 4)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : null}
+          </div>
+        </div>
         </div>
       </header>
 
-      {wallet && !wallet.clusterOk ? (
-        <div className="banner danger" role="status">
-          {wallet.clusterError ?? "This RPC is not Solana devnet. Sending is disabled."}
-        </div>
-      ) : null}
-      {showFaucet ? (
-        <div className="banner warn" role="status">
-          Balance is 0. Fund this devnet address at{" "}
-          <a href={FAUCET_URL} target="_blank" rel="noreferrer">
-            faucet.solana.com
-          </a>
-          {wallet?.keypairSource === "generated" ? " (a keypair was saved locally)" : ""}, then refresh.
-        </div>
-      ) : null}
+      <div className="column">
+        {wallet && !wallet.clusterOk ? (
+          <p className="banner danger" role="status">
+            {wallet.clusterError ?? "This RPC is not Solana devnet. Sending is disabled."}
+          </p>
+        ) : null}
+        {showFaucet ? (
+          <p className="banner" role="status">
+            Balance is 0. Fund this address at{" "}
+            <a href={FAUCET_URL} target="_blank" rel="noreferrer">
+              faucet.solana.com
+            </a>
+            {wallet?.keypairSource === "generated" ? ". A key was saved on this server" : ""}.
+          </p>
+        ) : null}
 
-      <div className="workspace">
-        <main className="panel chat">
-          <div className="thread" ref={threadRef} aria-live="polite">
-            {messages.length === 0 ? (
-              <div className="empty">
-                <h2>Pay with a sentence.</h2>
-                <p>
-                  Ask for a balance, save a contact, or send SOL on devnet. The agent can prepare a transfer. It cannot
-                  sign until you press Approve.
-                </p>
-                <div className="suggestions">
-                  {SUGGESTIONS.map((suggestion) => (
-                    <button
-                      key={suggestion.label}
-                      className="chip"
-                      type="button"
-                      onClick={() => void send(suggestion.prompt)}
-                    >
-                      {suggestion.label}
-                    </button>
-                  ))}
-                </div>
+        <div className="thread" ref={threadRef} aria-live="polite">
+          {messages.length === 0 ? (
+            <div className="empty">
+              <h2>Ask about this wallet.</h2>
+              <p>Balances, contacts, and transfers on devnet. Nothing is sent until you approve it.</p>
+              <div className="prompts">
+                {SUGGESTIONS.map((suggestion) => (
+                  <button key={suggestion.label} className="prompt" type="button" onClick={() => void send(suggestion.prompt)}>
+                    {suggestion.label}
+                  </button>
+                ))}
               </div>
-            ) : null}
-            {messages.map((message) => (
-              <div className={`row ${message.role}`} key={message.id}>
-                <div>
-                  <div className={`bubble ${message.role} ${message.error ? "error" : ""}`}>
-                    {message.pending ? (
-                      <span className="thinking" aria-label="Thinking">
-                        <i />
-                        <i />
-                        <i />
-                      </span>
-                    ) : message.role === "assistant" && !message.error ? (
-                      <MarkdownMessage text={message.content} />
-                    ) : (
-                      message.content
-                    )}
+            </div>
+          ) : (
+            <div className="turns">
+              {messages.map((message) =>
+                message.role === "user" ? (
+                  <div className="turn user" key={message.id}>
+                    <div className="user-text">{message.content}</div>
                   </div>
-                  {message.role === "assistant" && message.toolsUsed ? (
-                    <ToolPills tools={message.toolsUsed} locale={message.locale ?? "en"} />
-                  ) : null}
-                  {message.artifacts ? (
-                    <ArtifactList
-                      artifacts={message.artifacts}
-                      locale={message.locale ?? "en"}
-                      busyId={busyId}
-                      onApprove={(id) => void decide(id, "approve")}
-                      onCancel={(id) => void decide(id, "cancel")}
-                    />
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="composer">
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                void send(draft);
-              }}
-            >
-              <textarea
-                ref={boxRef}
-                aria-label="Message the agent"
-                data-testid="composer"
-                rows={1}
-                placeholder="Ask in English or Indonesian…"
-                value={draft}
-                disabled={sending}
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
-                    event.preventDefault();
-                    void send(draft);
-                  }
-                }}
-              />
-              <button className="btn primary" type="submit" disabled={sending || !draft.trim()}>
-                Send
-              </button>
-            </form>
-            <div className="hint" style={{ display: "flex", justifyContent: "space-between" }}>
-              <span>Devnet only · cap {wallet?.maxSolPerTransfer ?? "1"} SOL · Enter to send</span>
-              {messages.length > 0 ? (
-                <button className="icon-button" type="button" onClick={() => setMessages([])}>
-                  Clear chat
-                </button>
-              ) : (
-                <span />
+                ) : (
+                  <div className="turn agent" key={message.id}>
+                    <div className="agent">
+                      {message.pending ? (
+                        <p className="thinking">Thinking</p>
+                      ) : message.error ? (
+                        <p className="error-text">{message.content}</p>
+                      ) : (
+                        <MarkdownMessage text={message.content} />
+                      )}
+                      {message.toolsUsed ? <ToolPills tools={message.toolsUsed} locale={message.locale ?? "en"} /> : null}
+                      {message.artifacts ? (
+                        <ArtifactList
+                          artifacts={message.artifacts}
+                          locale={message.locale ?? "en"}
+                          busyId={busyId}
+                          onApprove={(id) => void decide(id, "approve")}
+                          onCancel={(id) => void decide(id, "cancel")}
+                        />
+                      ) : null}
+                    </div>
+                  </div>
+                ),
               )}
             </div>
+          )}
+        </div>
+
+        <div className="composer">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              void send(draft);
+            }}
+          >
+            <textarea
+              ref={boxRef}
+              aria-label="Message"
+              data-testid="composer"
+              rows={1}
+              placeholder="Message"
+              value={draft}
+              disabled={sending}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !event.shiftKey) {
+                  event.preventDefault();
+                  void send(draft);
+                }
+              }}
+            />
+            <button className="btn-primary" type="submit" disabled={sending || !draft.trim()}>
+              Send
+            </button>
+          </form>
+          <div className="composer-meta">
+            <span>Devnet · {wallet?.maxSolPerTransfer ?? "1"} SOL cap · Enter to send</span>
+            {messages.length > 0 ? (
+              <button className="text-btn" type="button" onClick={() => setMessages([])}>
+                Clear
+              </button>
+            ) : (
+              <span />
+            )}
           </div>
-        </main>
-        <aside className="side">
-          <section className="panel side-card">
-            <h2>Wallet</h2>
-            {wallet ? (
-              <div className="ident">
-                <span className="orb" style={{ background: orbGradient(wallet.address) }} aria-hidden="true" />
-                <div>
-                  <div className="addr mono">{wallet.address}</div>
-                  <p className="hint">
-                    {wallet.keypairSource === "env" ? "Key from environment" : "Saved on this server"}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <p className="hint">{walletError ?? "Loading the agent wallet…"}</p>
-            )}
-          </section>
-          <section className="panel side-card" style={{ flex: 1, minHeight: 0 }}>
-            <h2>Contacts</h2>
-            {contacts.length === 0 ? (
-              <p className="hint">No contacts yet. Try “save this address as Budi”.</p>
-            ) : (
-              <ul className="contact-list">
-                {contacts.map((contact) => (
-                  <li key={contact.name}>
-                    <strong>{contact.name}</strong>
-                    <span className="mono">{shortAddress(contact.address, 4, 4)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-          <section className="panel side-card">
-            <h2>Safety</h2>
-            <p className="hint">
-              The model has no sign tool. A transfer stays pending until you approve it. Devnet genesis is checked
-              before broadcast, and each send is capped.
-            </p>
-          </section>
-        </aside>
+        </div>
       </div>
     </div>
   );
@@ -384,12 +368,4 @@ function toHistory(messages: ChatMessage[], content: string) {
   }
   items.push({ role: "user", content });
   return items;
-}
-
-function orbGradient(address: string): string {
-  let hash = 0;
-  for (const char of address) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
-  const a = hash % 360;
-  const b = (hash >> 8) % 360;
-  return `conic-gradient(from 40deg, hsl(${a} 75% 62%), hsl(${b} 70% 42%), hsl(${a} 75% 62%))`;
 }
