@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArtifactList, ToolPills } from "@/components/Artifacts";
+import { MarkdownMessage } from "@/components/MarkdownMessage";
 import { FAUCET_URL, formatSolHeader, shortAddress } from "@/lib/format";
 import type { Artifact, ChatResponse, Contact, Locale, TransferView, WalletStatus } from "@/lib/types";
 
@@ -264,6 +265,8 @@ export function AppShell() {
                         <i />
                         <i />
                       </span>
+                    ) : message.role === "assistant" && !message.error ? (
+                      <MarkdownMessage text={message.content} />
                     ) : (
                       message.content
                     )}
