@@ -198,7 +198,7 @@ export function AppShell() {
     <div className="app">
       <header className="bar">
         <div className="bar-inner">
-        <h1 className="wordmark">Solana Pay</h1>
+        <h1 className="wordmark">Solana Pay Agent</h1>
         <div className="meta">
           <span className={`badge ${wallet && !wallet.clusterOk ? "bad" : ""}`}>Devnet</span>
           {wallet ? (
