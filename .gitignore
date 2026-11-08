@@ -1,0 +1,25 @@
+node_modules/
+.next/
+out/
+dist/
+coverage/
+.vercel/
+*.tsbuildinfo
+npm-debug.log*
+.DS_Store
+
+# secrets — .env* covers .env, .env.local, .env.production, and similar
+.env*
+**/.env*
+!.env.example
+!**/.env.example
+
+# keypair json files (Solana CLI id.json and any *keypair*.json)
+*.keypair.json
+**/*keypair*.json
+**/agent-keypair.json
+id.json
+
+# contacts and other local app data
+data/*.json
+data/contacts.json
